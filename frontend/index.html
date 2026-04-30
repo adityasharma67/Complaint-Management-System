@@ -24,6 +24,7 @@
         <form id="login-form">
           <input name="email" placeholder="Email" />
           <input name="password" type="password" placeholder="Password" />
+          <input name="passkey" placeholder="Admin passkey (optional)" />
           <button type="submit">Login</button>
         </form>
       </section>
@@ -34,6 +35,12 @@
           <input name="name" placeholder="Name" />
           <input name="email" placeholder="Email" />
           <input name="password" type="password" placeholder="Password" />
+          <label for="role">Role</label>
+          <select id="role" name="role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+          <input id="signup-passkey" name="passkey" placeholder="Admin passkey (required for admin)" class="hidden" />
           <button type="submit">Signup</button>
         </form>
       </section>

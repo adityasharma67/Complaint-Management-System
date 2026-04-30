@@ -9,8 +9,8 @@ Services:
 
 Quick start (requires Docker & Docker Compose):
 
-1. Copy `.env.example` to `backend/.env` and adjust if needed.
-2. Run:
+1. Ensure `.env` exists in repository root (we provide a default `.env`). Adjust values if needed.
+2. Build and start services:
 
 ```bash
 docker-compose up --build
@@ -18,6 +18,11 @@ docker-compose up --build
 
 3. Open http://localhost:3000 to use the frontend. Backend API runs on http://localhost:5000/api
 
+Default admin credentials (created automatically on DB init):
+
+- Email: admin@example.com
+- Password: adminpass
+
 Notes:
-- GitHub Actions workflow builds Docker images and pushes to Docker Hub. Set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` in repository secrets.
-- Default JWT secret in compose is `supersecret` — change for production.
+- GitHub Actions workflow builds and pushes Docker images to Docker Hub. Set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` in repository secrets.
+- Change `JWT_SECRET`, `ADMIN_PASSWORD`, and other secrets before production use.

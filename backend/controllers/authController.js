@@ -10,6 +10,12 @@ exports.signup = async (req, res, next) => {
     const existing = await User.findOne({ email });
     if (existing) return res.status(400).json({ message: 'Email already in use' });
 
+    // If creating admin, require admin passkey
+    if (role === 'admin') {
+      const passkey = req.body.passkey || '';
+      if (passkey !== (process.env.ADMIN_PASSKEY || '0000')) return res.status(403).json({ message: 'Invalid admin passkey' });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
 
@@ -31,7 +37,14 @@ exports.login = async (req, res, next) => {
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).json({ message: 'Invalid credentials' });
+
+    // Allow admin login with admin passkey as alternative to password
+    if (!match) {
+      const passkey = req.body.passkey || '';
+      if (!(passkey && passkey === (process.env.ADMIN_PASSKEY || '0000') && user.role === 'admin')) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+    }
 
     const token = jwt.sign({ id: user._id, role: user.role, name: user.name }, process.env.JWT_SECRET || 'secret', {
       expiresIn: '8h'

@@ -17,7 +17,7 @@ qs('#logout').onclick = ()=> { localStorage.removeItem('token'); alert('Logged o
 qs('#signup-form').onsubmit = async (e)=>{
   e.preventDefault();
   const fd = new FormData(e.target);
-  const body = { name: fd.get('name'), email: fd.get('email'), password: fd.get('password') };
+  const body = { name: fd.get('name'), email: fd.get('email'), password: fd.get('password'), role: fd.get('role'), passkey: fd.get('passkey') };
   const res = await fetch(API+'/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const j = await res.json();
   alert(j.message || 'Signed up');
@@ -27,11 +27,20 @@ qs('#signup-form').onsubmit = async (e)=>{
 qs('#login-form').onsubmit = async (e)=>{
   e.preventDefault();
   const fd = new FormData(e.target);
-  const body = { email: fd.get('email'), password: fd.get('password') };
+  const body = { email: fd.get('email'), password: fd.get('password'), passkey: fd.get('passkey') };
   const res = await fetch(API+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const j = await res.json();
   if(res.ok){ localStorage.setItem('token', j.token); alert('Logged in'); show('submit'); } else { alert(j.message || 'Login failed'); }
 };
+
+// Show/hide signup passkey input when role is admin
+const roleSelect = qs('#role');
+const signupPasskey = qs('#signup-passkey');
+if (roleSelect) {
+  roleSelect.onchange = () => {
+    if (roleSelect.value === 'admin') signupPasskey.classList.remove('hidden'); else signupPasskey.classList.add('hidden');
+  };
+}
 
 qs('#submit-form').onsubmit = async (e)=>{
   e.preventDefault();
@@ -66,16 +75,12 @@ async function loadAdmin(){
   if(data.length===0) list.textContent='No complaints.';
   data.forEach(c=>{
     const el = document.createElement('div'); el.className='item';
+    const options = ['Pending','In Progress','Resolved'].map(s => `<option value="${s}" ${s===c.status? 'selected' : ''}>${s}</option>`).join('');
     el.innerHTML = `<div><strong>${c.title}</strong> <span class="status">[${c.status}]</span></div>
       <div>${c.description}</div>
       <div>By: ${c.userId?.name || 'N/A'} (${c.userId?.email || ''})</div>
       <div>
-        <select data-id="${c._id}" class="status-select">
-          <option>${c.status}</option>
-          <option>Pending</option>
-          <option>In Progress</option>
-          <option>Resolved</option>
-        </select>
+        <select data-id="${c._id}" class="status-select">${options}</select>
         <button data-id="${c._id}" class="update-btn">Update</button>
       </div>`;
     list.appendChild(el);

@@ -1,9 +1,20 @@
-body { font-family: Arial, sans-serif; background:#f6f8fa; }
-.container { max-width:800px; margin:30px auto; background:#fff; padding:20px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.1);} 
-nav { margin-bottom:16px; }
-nav button { margin-right:8px; padding:8px 12px; }
-.page { margin-top:12px; }
-.hidden { display:none; }
-form input, form textarea { display:block; width:100%; margin-bottom:8px; padding:8px; }
-#complaints-list .item, #admin-list .item { border:1px solid #ddd; padding:8px; margin-bottom:8px; }
-.status { font-weight:600; }
+:root{
+	--bg:#f4f6f8;
+	--card:#ffffff;
+	--accent:#2563eb;
+	--muted:#6b7280;
+}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial;margin:0;background:var(--bg);color:#111}
+.container{max-width:960px;margin:28px auto;background:var(--card);padding:24px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.08)}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+nav button{background:transparent;border:1px solid #e6eef8;padding:8px 12px;border-radius:8px;color:var(--accent);cursor:pointer}
+nav button:hover{background:#eef6ff}
+.page{margin-top:12px}
+.hidden{display:none}
+form input,form textarea,select{display:block;width:100%;margin-bottom:10px;padding:10px;border-radius:8px;border:1px solid #e6e9ee}
+form button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
+form button:hover{opacity:0.95}
+#complaints-list .item,#admin-list .item{border:1px solid #eef2ff;padding:12px;margin-bottom:12px;border-radius:8px;background:#fbfdff}
+.status{font-weight:700;color:var(--muted)}
+.meta{font-size:12px;color:var(--muted);margin-top:6px}
+.item div{margin-bottom:6px}
