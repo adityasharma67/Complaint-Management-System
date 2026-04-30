@@ -1,0 +1,45 @@
+name: CI Build and Docker
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build backend dependencies
+        working-directory: ./backend
+        run: |
+          npm ci
+
+      - name: Build backend (lint/test placeholder)
+        working-directory: ./backend
+        run: |
+          echo "No tests defined; install succeeded"
+
+      - name: Build Docker images
+        run: |
+          docker build -t ${{ github.repository }}-backend:latest ./backend
+          docker build -t ${{ github.repository }}-frontend:latest ./frontend
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push images to Docker Hub
+        run: |
+          docker tag ${{ github.repository }}-backend:latest ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}-backend:latest
+          docker tag ${{ github.repository }}-frontend:latest ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}-frontend:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}-backend:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}-frontend:latest

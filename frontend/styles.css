@@ -1,0 +1,9 @@
+body { font-family: Arial, sans-serif; background:#f6f8fa; }
+.container { max-width:800px; margin:30px auto; background:#fff; padding:20px; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.1);} 
+nav { margin-bottom:16px; }
+nav button { margin-right:8px; padding:8px 12px; }
+.page { margin-top:12px; }
+.hidden { display:none; }
+form input, form textarea { display:block; width:100%; margin-bottom:8px; padding:8px; }
+#complaints-list .item, #admin-list .item { border:1px solid #ddd; padding:8px; margin-bottom:8px; }
+.status { font-weight:600; }
