@@ -35,9 +35,9 @@ exports.updateStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    if (!['Pending', 'In Progress', 'Resolved'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
+    if (!['pending', 'in_progress', 'resolved'].includes(status)) return res.status(400).json({ message: 'Invalid status' });
 
-    const complaint = await Complaint.findById(id);
+    const complaint = await Complaint.findById(id).populate('userId', 'name email');
     if (!complaint) return res.status(404).json({ message: 'Complaint not found' });
 
     complaint.status = status;

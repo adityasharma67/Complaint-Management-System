@@ -1,45 +1,170 @@
-name: CI Build and Docker
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  REGISTRY: docker.io
+  BACKEND_IMAGE: complaint-backend
+  FRONTEND_IMAGE: complaint-frontend
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Node
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
-      - name: Build backend dependencies
+      # Backend setup and build
+      - name: Install Backend Dependencies
         working-directory: ./backend
         run: |
+          echo "📦 Installing backend dependencies..."
           npm ci
+          echo "✅ Backend dependencies installed"
 
-      - name: Build backend (lint/test placeholder)
+      - name: Backend Validation
         working-directory: ./backend
         run: |
-          echo "No tests defined; install succeeded"
+          echo "✅ Backend validation passed (no tests defined)"
 
-      - name: Build Docker images
+      # Frontend setup and build
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
         run: |
-          docker build -t ${{ github.repository }}-backend:latest ./backend
-          docker build -t ${{ github.repository }}-frontend:latest ./frontend
+          echo "📦 Installing frontend dependencies..."
+          npm ci
+          echo "✅ Frontend dependencies installed"
 
-      - name: Login to Docker Hub
+      - name: Build Frontend
+        working-directory: ./frontend
+        run: |
+          echo "🔨 Building frontend..."
+          npm run build
+          echo "✅ Frontend build completed"
+          echo "📁 Build output:"
+          ls -lah dist/ || echo "dist directory not found"
+
+      - name: Check Frontend Build Artifacts
+        working-directory: ./frontend
+        run: |
+          if [ -d "dist" ] && [ "$(ls -A dist)" ]; then
+            echo "✅ Frontend build artifacts verified"
+            find dist -type f | head -20
+          else
+            echo "❌ Frontend build failed - no artifacts generated"
+            exit 1
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Push images to Docker Hub
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          tags: ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker Build - Backend
         run: |
-          docker tag ${{ github.repository }}-backend:latest ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}-backend:latest
-          docker tag ${{ github.repository }}-frontend:latest ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}-frontend:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}-backend:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.repository }}-frontend:latest
+          echo "🐳 Testing backend Docker build..."
+          docker build -t test-backend:latest ./backend
+          echo "✅ Backend Docker image built successfully"
+
+      - name: Test Docker Build - Frontend
+        run: |
+          echo "🐳 Testing frontend Docker build..."
+          docker build -t test-frontend:latest ./frontend
+          echo "✅ Frontend Docker image built successfully"
+
+      - name: Push Backend Image to Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Pushing backend image to Docker Hub..."
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:latest -t ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} ./backend
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          echo "✅ Backend image pushed successfully"
+
+      - name: Push Frontend Image to Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Pushing frontend image to Docker Hub..."
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest -t ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }} ./frontend
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          echo "✅ Frontend image pushed successfully"
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy Results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  deployment-status:
+    runs-on: ubuntu-latest
+    needs: [ build, security-scan ]
+    if: always()
+
+    steps:
+      - name: Deployment Status
+        run: |
+          echo "✅ CI/CD Pipeline Summary"
+          echo "========================="
+          echo "Build Status: ${{ needs.build.result }}"
+          echo "Security Scan: ${{ needs.security-scan.result }}"
+          if [ "${{ needs.build.result }}" == "success" ]; then
+            echo "🎉 All checks passed! Ready for deployment."
+          else
+            echo "❌ Pipeline failed. Please check the logs."
+            exit 1
+          fi

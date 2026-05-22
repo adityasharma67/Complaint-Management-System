@@ -16,7 +16,20 @@ exports.signup = async (req, res, next) => {
     const user = new User({ name, email, password: hash, role: role || 'user' });
     await user.save();
 
-    res.status(201).json({ message: 'User created' });
+    const token = jwt.sign({ id: user._id, role: user.role, name: user.name }, process.env.JWT_SECRET || 'secret', {
+      expiresIn: '8h'
+    });
+
+    res.status(201).json({ 
+      message: 'User created',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -37,7 +50,15 @@ exports.login = async (req, res, next) => {
       expiresIn: '8h'
     });
 
-    res.json({ token });
+    res.json({ 
+      token, 
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (err) {
     next(err);
   }

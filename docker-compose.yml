@@ -1,30 +1,64 @@
 version: '3.8'
+
 services:
   mongo:
-    image: mongo:6
+    image: mongo:6-alpine
+    container_name: complaint-mongo
     restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password123}
+      MONGO_INITDB_DATABASE: complaintsdb
+    ports:
+      - "27017:27017"
     volumes:
       - mongo-data:/data/db
-    ports:
-      - 27017:27017
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/complaintsdb -u ${MONGO_USER:-admin} -p ${MONGO_PASSWORD:-password123} --authenticationDatabase admin
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: complaint-backend
+    restart: unless-stopped
     ports:
-      - 5000:5000
+      - "5000:5000"
     environment:
-      - MONGO_URI=mongodb://mongo:27017/complaintsdb
-      - JWT_SECRET=supersecret
-      - PORT=5000
+      MONGO_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-password123}@mongo:27017/complaintsdb?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-supersecretkey123}
+      PORT: 5000
+      NODE_ENV: production
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: complaint-frontend
+    restart: unless-stopped
     ports:
-      - 3000:80
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://backend:5000
     depends_on:
       - backend
 
 volumes:
   mongo-data:
+    driver: local
+
+networks:
+  default:
+    name: complaint-network
+    driver: bridge
