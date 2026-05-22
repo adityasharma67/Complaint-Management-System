@@ -1,3 +1,4 @@
+# GitHub Actions CI/CD Pipeline with proper context syntax for secrets
 name: CI/CD Pipeline
 
 on:
