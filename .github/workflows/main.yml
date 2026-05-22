@@ -73,7 +73,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Log in to Docker Hub
-        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+        continue-on-error: true
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -92,7 +92,8 @@ jobs:
           echo "✅ Frontend Docker image built successfully"
 
       - name: Push Backend Image to Docker Hub
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+        continue-on-error: true
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "🚀 Pushing backend image to Docker Hub..."
           docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:latest -t ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} ./backend
@@ -101,11 +102,12 @@ jobs:
           echo "✅ Backend image pushed successfully"
 
       - name: Push Backend Image Notice
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && (secrets.DOCKER_USERNAME == '' || secrets.DOCKER_PASSWORD == '') }}
-        run: echo "⚠️  Skipping Docker Hub push - Docker credentials not configured in repository secrets"
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        run: echo "ℹ️  Skipping Docker Hub push - running on non-main branch"
 
       - name: Push Frontend Image to Docker Hub
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+        continue-on-error: true
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "🚀 Pushing frontend image to Docker Hub..."
           docker build -t ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest -t ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }} ./frontend
@@ -114,8 +116,8 @@ jobs:
           echo "✅ Frontend image pushed successfully"
 
       - name: Push Frontend Image Notice
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && (secrets.DOCKER_USERNAME == '' || secrets.DOCKER_PASSWORD == '') }}
-        run: echo "⚠️  Skipping Docker Hub push - Docker credentials not configured in repository secrets"
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        run: echo "ℹ️  Skipping Docker Hub push - running on non-main branch"
 
   security-scan:
     runs-on: ubuntu-latest
