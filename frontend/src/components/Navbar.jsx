@@ -50,9 +50,11 @@ const Navbar = () => {
                 <Link to="/dashboard" className="hover:text-blue-100 transition">
                   Dashboard
                 </Link>
-                <Link to="/submit-complaint" className="hover:text-blue-100 transition">
-                  New Complaint
-                </Link>
+                {!isUserAdmin && (
+                  <Link to="/submit-complaint" className="hover:text-blue-100 transition">
+                    New Complaint
+                  </Link>
+                )}
                 {isUserAdmin && (
                   <Link to="/admin" className="hover:text-blue-100 transition">
                     Admin Panel
@@ -84,9 +86,11 @@ const Navbar = () => {
                 <Link to="/dashboard" className="block hover:text-blue-100 transition py-2">
                   Dashboard
                 </Link>
-                <Link to="/submit-complaint" className="block hover:text-blue-100 transition py-2">
-                  New Complaint
-                </Link>
+                {!isUserAdmin && (
+                  <Link to="/submit-complaint" className="block hover:text-blue-100 transition py-2">
+                    New Complaint
+                  </Link>
+                )}
                 {isUserAdmin && (
                   <Link to="/admin" className="block hover:text-blue-100 transition py-2">
                     Admin Panel

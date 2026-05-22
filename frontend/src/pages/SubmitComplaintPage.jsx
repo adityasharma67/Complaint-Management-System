@@ -1,13 +1,21 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { complaintsAPI } from '../api/client'
 import Spinner from '../components/Spinner'
 import { toast } from 'react-toastify'
+import { isAdmin } from '../utils/auth'
 
 const SubmitComplaintPage = () => {
   const [formData, setFormData] = useState({ title: '', description: '' })
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (isAdmin()) {
+      toast.error('Admins cannot submit complaints')
+      navigate('/admin')
+    }
+  }, [navigate])
 
   const handleChange = (e) => {
     const { name, value } = e.target
